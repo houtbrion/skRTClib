@@ -1,0 +1,26 @@
+#######################################
+# Syntax Coloring Map For skRTClib
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+InterFlag	KEYWORD1
+skRTClib	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+sTime	KEYWORD2
+rTime	KEYWORD2
+cTime	KEYWORD2
+SetTimer	KEYWORD2
+StopTimer	KEYWORD2
+SetAlarm	KEYWORD2
+StopAlarm	KEYWORD2
+offAlarm	KEYWORD2
+bcd2bin	KEYWORD2
+bin2bcd	KEYWORD2
+
