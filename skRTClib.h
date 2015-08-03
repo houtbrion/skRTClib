@@ -26,7 +26,7 @@ class skRTClib
          skRTClib() ;
     unsigned int bcd2bin(byte dt) ;
     unsigned int bin2bcd(unsigned int num) ;
-    int begin(byte Inter,byte Year,byte Mon,byte mDay,byte wDay,byte Hour,byte Min,byte Sec) ;
+    int begin(byte Pin,byte IntNum,void (*IntRTC)(void),byte Year,byte Mon,byte mDay,byte wDay,byte Hour,byte Min,byte Sec) ;
     int sTime(byte Year,byte Mon,byte mDay,byte wDay,byte Hour,byte Min,byte Sec) ;
     int rTime(byte *tm) ;
     void cTime(byte *tm, byte *c) ;
@@ -40,6 +40,6 @@ class skRTClib
     void set_ctime(byte tm,byte s,byte *a) ;
 } ;
 
-extern skRTClib RTC ;
+extern skRTClib skRTC ;
 
 #endif
