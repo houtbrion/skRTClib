@@ -24,6 +24,7 @@
 #include "arduino.h"
 #include "skRTClib.h"
 
+#define WRITE_FIX
 
 byte skRTClib::Ctrl2 ;                  // Control2(Reg01)の設定内容を保存
 byte skRTClib::InterFlag ;              // 外部割込みの有無をチェックするフラグ
@@ -96,7 +97,11 @@ int skRTClib::begin(byte Pin,byte IntNum,void (*IntRTC)(void),byte Year,byte Mon
      Wire.begin() ;                     // Ｉ２Ｃの初期化、マスターとする
      delay(1000) ;                      // 1秒後に開始(RTC水晶振動子の発振を待つ)
      Wire.beginTransmission(RTC_ADRS) ; // 通信の開始処理（初期化状態のチェック）
+#ifndef WRITE_FIX
      Wire.write(0x01) ;                 // レジスターアドレスは01hを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t) 0x01) ;                 // レジスターアドレスは01hを指定する
+#endif /* WRITE_FIX */
      ans = Wire.endTransmission() ;     // データの送信と終了処理
      if (ans == 0) {
           ans = Wire.requestFrom(RTC_ADRS,2) ; // ＲＴＣにデータ送信要求をだす
@@ -105,6 +110,7 @@ int skRTClib::begin(byte Pin,byte IntNum,void (*IntRTC)(void),byte Year,byte Mon
                reg2 = Wire.read()  ; // Reg 02H を受信する
                if (reg2 & 0x80) {       // VLビットがＯＮなら初期化する
                     Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理（設定の書き込み）
+#ifndef WRITE_FIX
                     Wire.write(0x00) ;                  // レジスターアドレスは00hを指定する
                     Wire.write(0x20) ;                  // Control1(Reg00)の設定(TEST=0,STOP=1)
                     Ctrl2 = 0x11    ;                   // 
@@ -123,11 +129,36 @@ int skRTClib::begin(byte Pin,byte IntNum,void (*IntRTC)(void),byte Year,byte Mon
                     Wire.write(0x83) ;                  // CLKOUT(Reg0D)の設定(1Hzで出力する)
                     Wire.write(0x00) ;                  // TimerControl(Reg0E)の設定(タイマ機能は無効)
                     Wire.write(0x00) ;                  // Timer(Reg0F)の設定(タイマ初期値は０)
+#else /* WRITE_FIX */
+                    Wire.write((uint8_t)0x00) ;                  // レジスターアドレスは00hを指定する
+                    Wire.write((uint8_t)0x20) ;                  // Control1(Reg00)の設定(TEST=0,STOP=1)
+                    Ctrl2 = 0x11    ;                   // 
+                    Wire.write(Ctrl2);                  // Control2(Reg01)の設定(割込み禁止)
+                    Wire.write((byte)bin2bcd(Sec)) ;    // Seconds(Reg02)の設定(時刻の秒0-59,VL=0)
+                    Wire.write((byte)bin2bcd(Min)) ;    // Minutes(Reg03)の設定(時刻の分0-59)
+                    Wire.write((byte)bin2bcd(Hour)) ;   // Hours(Reg04)の設定(時刻の時0-23)
+                    Wire.write((byte)bin2bcd(mDay)) ;   // Days(Reg05)の設定(カレンダの日1-31)
+                    Wire.write((byte)bin2bcd(wDay)) ;   // WeekDays(Reg06)の設定(カレンダの曜日0-6)
+                    Wire.write((byte)bin2bcd(Mon)) ;    // Months(Reg07)の設定(カレンダの月1-12)
+                    Wire.write((byte)bin2bcd(Year)) ;   // Years(Reg08)の設定(カレンダの年00-99)
+                    Wire.write((uint8_t)0x80) ;                  // MinuteAlarm(Reg09)の設定(アラームの分無効)
+                    Wire.write((uint8_t)0x80) ;                  // HourAlarm(Reg0A)の設定(アラームの時無効)
+                    Wire.write((uint8_t)0x80) ;                  // HourAlarm(Reg0B)の設定(アラームの日無効)
+                    Wire.write((uint8_t)0x80) ;                  // WeekDayAlarm(Reg0C)の設定(アラームの曜日無効)
+                    Wire.write((uint8_t)0x83) ;                  // CLKOUT(Reg0D)の設定(1Hzで出力する)
+                    Wire.write((uint8_t)0x00) ;                  // TimerControl(Reg0E)の設定(タイマ機能は無効)
+                    Wire.write((uint8_t)0x00) ;                  // Timer(Reg0F)の設定(タイマ初期値は０)
+#endif /* WRITE_FIX */
                     ans = Wire.endTransmission() ;      // データの送信と終了処理
                     if (ans == 0) {
                          Wire.beginTransmission(RTC_ADRS) ; // 通信の開始処理（時刻のカウント開始）
+#ifndef WRITE_FIX
                          Wire.write(0x00) ;                 // レジスターアドレスは00hを指定する
                          Wire.write(0x00) ;                 // Control1(Reg00)の設定(TEST=0,STOP=0)
+#else /* WRITE_FIX */
+                         Wire.write((uint8_t)0x00) ;                 // レジスターアドレスは00hを指定する
+                         Wire.write((uint8_t)0x00) ;                 // Control1(Reg00)の設定(TEST=0,STOP=0)
+#endif /* WRITE_FIX */
                          ans = Wire.endTransmission() ;     // データの送信と終了処理
                          delay(1000) ;                      // カウント開始を待つ
                     }
@@ -157,12 +188,21 @@ int skRTClib::sTime(byte Year,byte Mon,byte mDay,byte wDay,byte Hour,byte Min,by
      int ans ;
 
      Wire.beginTransmission(RTC_ADRS) ;       // 通信の開始処理（時刻の設定）
+#ifndef WRITE_FIX
      Wire.write(0x00) ;                       // レジスターアドレスは00hを指定する
      Wire.write(0x20) ;                       // Control1(Reg00)の設定(TEST=0,STOP=1)
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x00) ;                       // レジスターアドレスは00hを指定する
+     Wire.write((uint8_t)0x20) ;                       // Control1(Reg00)の設定(TEST=0,STOP=1)
+#endif /* WRITE_FIX */
      ans = Wire.endTransmission() ;           // データの送信と終了処理
      if (ans == 0) {
           Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理（時刻の設定）
+#ifndef WRITE_FIX
           Wire.write(0x02) ;                  // レジスターアドレスは02hを指定する
+#else /* WRITE_FIX */
+          Wire.write((uint8_t)0x02) ;                  // レジスターアドレスは02hを指定する
+#endif /* WRITE_FIX */
           Wire.write((byte)bin2bcd(Sec)) ;    // Seconds(Reg02)の設定(時刻の秒0-59,VL=0)
           Wire.write((byte)bin2bcd(Min)) ;    // Minutes(Reg03)の設定(時刻の分0-59)
           Wire.write((byte)bin2bcd(Hour)) ;   // Hours(Reg04)の設定(時刻の時0-23)
@@ -173,8 +213,13 @@ int skRTClib::sTime(byte Year,byte Mon,byte mDay,byte wDay,byte Hour,byte Min,by
           ans = Wire.endTransmission() ;      // データの送信と終了処理
           if (ans == 0) {
                Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理（時刻のカウント開始）
+#ifndef WRITE_FIX
                Wire.write(0x00) ;                  // レジスターアドレスは00hを指定する
                Wire.write(0x00) ;                  // Control1(Reg00)の設定(TEST=0,STOP=0)
+#else /* WRITE_FIX */
+               Wire.write((uint8_t)0x00) ;                  // レジスターアドレスは00hを指定する
+               Wire.write((uint8_t)0x00) ;                  // Control1(Reg00)の設定(TEST=0,STOP=0)
+#endif /* WRITE_FIX */
                ans = Wire.endTransmission() ;      // データの送信と終了処理
                delay(1000) ;                       // カウント開始を待つ
           }
@@ -194,7 +239,11 @@ int skRTClib::rTime(byte *tm)
      int i , ans ;
 
      Wire.beginTransmission(RTC_ADRS) ;        // 通信の開始処理（時刻の受信）
+#ifndef WRITE_FIX
      Wire.write(0x02) ;                        // レジスターアドレスは02hを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x02) ;                        // レジスターアドレスは02hを指定する
+#endif /* WRITE_FIX */
      ans = Wire.endTransmission() ;            // データの送信と終了処理
      if (ans == 0) {
           ans = Wire.requestFrom(RTC_ADRS,7) ; // ＲＴＣにデータ送信要求をだす
@@ -270,11 +319,19 @@ int skRTClib::SetTimer(byte sclk,byte count)
      int ans ;
 
      Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理
+#ifndef WRITE_FIX
      Wire.write(0x0f) ;                  // レジスターアドレスは0fhを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x0f) ;                  // レジスターアドレスは0fhを指定する
+#endif /* WRITE_FIX */
      Wire.write(count);                  // カウントダウンタイマー値の設定
      ans = Wire.endTransmission() ;      // データの送信と終了処理
      Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理
+#ifndef WRITE_FIX
      Wire.write(0x0e) ;                  // レジスターアドレスは0ehを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x0e) ;                  // レジスターアドレスは0ehを指定する
+#endif /* WRITE_FIX */
      Wire.write(sclk | 0x80) ;           // ソースクロックの設定とタイマーの開始
      ans = Wire.endTransmission() ;      // データの送信と終了処理
      return ans ;
@@ -290,11 +347,20 @@ int skRTClib::StopTimer()
      int ans ;
 
      Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理
+#ifndef WRITE_FIX
      Wire.write(0x0e) ;                  // レジスターアドレスは0ehを指定する
      Wire.write(0x00) ;                  // タイマーの終了
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x0e) ;                  // レジスターアドレスは0ehを指定する
+     Wire.write((uint8_t)0x00) ;                  // タイマーの終了
+#endif /* WRITE_FIX */
      ans = Wire.endTransmission() ;      // データの送信と終了処理
      Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理（アラームの開始）
+#ifndef WRITE_FIX
      Wire.write(0x01) ;                  // レジスターアドレスは01hを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x01) ;                  // レジスターアドレスは01hを指定する
+#endif /* WRITE_FIX */
      Ctrl2 = Ctrl2 & 0xfb ;              // タイマーフラグをクリア(TF=0)
      Wire.write(Ctrl2);                  // Control2(Reg01)の設定
      ans = Wire.endTransmission() ;      // データの送信と終了処理
@@ -316,6 +382,7 @@ int skRTClib::SetAlarm(byte Hour,byte Min,byte mDay,byte wDay)
      int ans ;
 
      Wire.beginTransmission(RTC_ADRS) ;    // 通信の開始処理（アラーム時刻の設定）
+#ifndef WRITE_FIX
      Wire.write(0x09) ;                    // レジスターアドレスは09hを指定する
      if (Min == 0xff)  Wire.write(0x80)   ;// MinuteAlarm(Reg09)の設定(分は無効)
      else Wire.write((byte)bin2bcd(Min))  ;// 0-59(分は有効)
@@ -325,9 +392,24 @@ int skRTClib::SetAlarm(byte Hour,byte Min,byte mDay,byte wDay)
      else Wire.write((byte)bin2bcd(mDay)) ;// 1-31(日は有効)
      if (wDay == 0xff) Wire.write(0x80)   ;// WeekDaysAlarm(Reg0C)の設定(曜日は無効)
      else Wire.write((byte)bin2bcd(wDay)) ;// 0-6(曜日は有効)
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x09) ;                    // レジスターアドレスは09hを指定する
+     if (Min == 0xff)  Wire.write((uint8_t)0x80)   ;// MinuteAlarm(Reg09)の設定(分は無効)
+     else Wire.write((byte)bin2bcd(Min))  ;// 0-59(分は有効)
+     if (Hour == 0xff) Wire.write((uint8_t)0x80)   ;// HoursAlarm(Reg0A)の設定(時は無効)
+     else Wire.write((byte)bin2bcd(Hour)) ;// 0-23(時は有効)
+     if (mDay == 0xff) Wire.write((uint8_t)0x80)   ;// DaysAlarm(Reg0B)の設定(日は無効)
+     else Wire.write((byte)bin2bcd(mDay)) ;// 1-31(日は有効)
+     if (wDay == 0xff) Wire.write((uint8_t)0x80)   ;// WeekDaysAlarm(Reg0C)の設定(曜日は無効)
+     else Wire.write((byte)bin2bcd(wDay)) ;// 0-6(曜日は有効)
+#endif /* WRITE_FIX */
      ans = Wire.endTransmission() ;        // データの送信と終了処理
      Wire.beginTransmission(RTC_ADRS) ;    // 通信の開始処理（アラームの開始）
+#ifndef WRITE_FIX
      Wire.write(0x01) ;                    // レジスターアドレスは01hを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x01) ;                    // レジスターアドレスは01hを指定する
+#endif /* WRITE_FIX */
      Ctrl2 = (Ctrl2 | 0x02) & 0xf7 ;       // アラームを有効にする(AIE=1 AF=0)
      Wire.write(Ctrl2);                    // Control2(Reg01)の設定(割込み)
      ans = Wire.endTransmission() ;        // データの送信と終了処理
@@ -344,7 +426,11 @@ int skRTClib::StopAlarm()
      int ans ;
 
      Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理（アラームの停止）
+#ifndef WRITE_FIX
      Wire.write(0x01) ;                  // レジスターアドレスは01hを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x01) ;                  // レジスターアドレスは01hを指定する
+#endif /* WRITE_FIX */
      Ctrl2 = Ctrl2 & 0xf5 ;              // アラームを無効にする(AIE=0 AF=0)
      Wire.write(Ctrl2);                  // Control2(Reg01)の設定(割込み)
      ans = Wire.endTransmission() ;      // データの送信と終了処理
@@ -361,7 +447,11 @@ int skRTClib::offAlarm()
      int ans ;
 
      Wire.beginTransmission(RTC_ADRS) ;  // 通信の開始処理（アラーム出力の解除）
+#ifndef WRITE_FIX
      Wire.write(0x01) ;                  // レジスターアドレスは01hを指定する
+#else /* WRITE_FIX */
+     Wire.write((uint8_t)0x01) ;                  // レジスターアドレスは01hを指定する
+#endif /* WRITE_FIX */
      Ctrl2 = Ctrl2 & 0xf7 ;              // アラームの出力を解除する(AF=0)
      Wire.write(Ctrl2);                  // Control2(Reg01)の設定(割込み)
      ans = Wire.endTransmission() ;      // データの送信と終了処理
