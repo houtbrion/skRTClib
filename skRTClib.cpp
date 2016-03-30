@@ -30,7 +30,7 @@ byte skRTClib::Ctrl2 ;                  // Control2(Reg01)の設定内容を保�
 byte skRTClib::InterFlag ;              // 外部割込みの有無をチェックするフラグ
 
 
-skRTClib skRTC = skRTClib() ;             // Preinstantiate Objects
+//skRTClib skRTC = skRTClib() ;             // Preinstantiate Objects
 
 ////////////////////////////////////////////////////////////////////////////////
 // RTC(CLKOUT)からの外部割込みで処理される関数
