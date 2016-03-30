@@ -55,6 +55,15 @@ unsigned int skRTClib::bin2bcd(unsigned int num)
 {
      return ((num/100) << 8) | ( ((num%100) / 10) << 4 ) | (num%10) ;
 }
+
+
+/* int skRTC::start(byte Pin)
+{
+     Wire.begin() ;                     // Ｉ２Ｃの初期化、マスターとする
+     delay(1000) ;                      // 1秒後に開始(RTC水晶振動子の発振を待つ)
+} */
+
+
 /*********************************************************************************
 *  ans = begin(Pin,IntNum,InterRTC,Year,Mon,mDay,wDay,Hour,Min,Sec)              *
 *    ＲＴＣの初期化を行う処理                                                    *
