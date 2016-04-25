@@ -373,6 +373,7 @@ int skRTClib::StopTimer()
      ans = Wire.endTransmission() ;      // データの送信と終了処理
      return ans ;
 }
+
 /*******************************************************************************
 *  ans = SetAlarm(Hour,Min,mDay,wDay)                                          *
 *    アラームの日時を設定する処理（アラームの開始）                            *
